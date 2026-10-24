@@ -1,11 +1,9 @@
 {
   "dock_apps": [
-    "com.netflix.ninja",
+    "Pop.Pop",
     "com.google.android.youtube.tv",
-    "com.amazon.amazonvideo.livingroom",
-    "com.disney.disneyplus",
-    "com.wbd.stream",
-    "com.apple.atve.androidtv.appletv"
+    "com.spotify.tv.android",
+    "tv.twitch.android.app"
   ],
   "background_color": "#090C14",
   "wallpaper": true,
