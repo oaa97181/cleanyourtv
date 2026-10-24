@@ -708,6 +708,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
         });
         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
+        btnScreensaverTimeout = findViewById(R.id.btnScreensaverTimeout);
+        btnScreensaverTimeout.setOnClickListener(v -> toggleScreensaverTimeout());
+        refreshScreensaverTimeoutLabel();
         addTopBarApps(cfg.topBarApps);
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
@@ -760,7 +763,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
                 return true;
             }
-            int firstButton = btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
+            int firstButton = btnScreensaverTimeout.getVisibility() == View.VISIBLE ? R.id.btnScreensaverTimeout
+                    : btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
             int leftButton = rtlMenuBar ? R.id.btnSettings : firstButton;
             int rightButton = rtlMenuBar ? firstButton : R.id.btnSettings;
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == leftButton;
@@ -771,9 +775,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnSettings.setOnKeyListener(pillKeys);
         btnReorder.setOnKeyListener(pillKeys);
         btnLibraryTop.setOnKeyListener(pillKeys);
+        btnScreensaverTimeout.setOnKeyListener(pillKeys);
         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
         if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings));
+            List<View> pills = new ArrayList<>(Arrays.asList(btnScreensaverTimeout, btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings));
             pills.addAll(topAppButtons);
             for (View button : pills) {
                 button.setOnFocusChangeListener((view, focused) -> view.animate()
@@ -921,6 +926,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         }
         restartIdleClock();
+        refreshScreensaverTimeoutLabel();
         promptsPaused = false;
         if (grid.getAdapter() == null) grid.setAdapter(adapter);   // dropped by onTrimMemory
         switch (tileRefresh.onResume(packagesChangedSinceRebuild())) {
@@ -1290,6 +1296,24 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     /** The reorder button: turns the mode on (focus goes back to the last tile), or off again. */
+    /** Reads the live Settings.System.SCREEN_OFF_TIMEOUT and labels the pill "10s" or "5 min" to match;
+     * anything else (changed via TV Settings directly) is treated as the "5 min" state. Local addition. */
+    private void refreshScreensaverTimeoutLabel() {
+        int ms = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 300000);
+        btnScreensaverTimeout.setText(ms <= 10000 ? R.string.quick_screensaver_fast : R.string.quick_screensaver_default);
+    }
+
+    /** Flips Settings.System.SCREEN_OFF_TIMEOUT between 10s and 5min and relabels the pill. Local addition. */
+    private void toggleScreensaverTimeout() {
+        int current = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 300000);
+        int next = current <= 10000 ? 300000 : 10000;
+        try {
+            Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, next);
+        } catch (SecurityException ignored) {
+        }
+        refreshScreensaverTimeoutLabel();
+    }
+
     private void toggleReorder() {
         if (reordering) {
             endReorder();
@@ -2632,6 +2656,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private ColorStateList wifiNoInternetTint, wifiOfflineTint;
     /** The app library button in the top bar (library_button). */
     private View btnLibraryTop;
+    /** Toggles Settings.System.SCREEN_OFF_TIMEOUT between 10s and 5min. Local addition, not upstream. */
+    private TextView btnScreensaverTimeout;
     /** The open library came from that button: closing it returns there instead of scrolling to the grid's end. */
     private boolean libraryFromTopBar;
 
